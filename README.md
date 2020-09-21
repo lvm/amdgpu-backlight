@@ -21,6 +21,17 @@ optional arguments:
   --confirm    This software is provided AS IS. Please, confirm that you're completely sure that you want to run this script. This argument is required.
 ```
 
+### i3
+
+There's also a companion script for `i3status`: `i3status-amdgpu-backlight`, which you can use like so:
+
+```
+bar {
+        status_command i3status | /path/to/bin/i3status-amdgpu-backlight
+        ...
+}
+```
+
 ### sudoers.d
 
 You might want to create a file named `/etc/sudoers.d/amdgpu-backlight` with this content:

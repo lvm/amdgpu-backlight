@@ -52,7 +52,7 @@ def limits(value: int) -> int:
     try:
         value = int(value)
     except:
-        print ("value: Wrong type. Must be `int`.")
+        print("value: Wrong type. Must be `int`.")
         sys.exit(1)
 
     if value < FLOOR:
@@ -63,14 +63,14 @@ def limits(value: int) -> int:
     return value
 
 
-def to_percent(value:int) -> int:
+def to_percent(value: int) -> int:
     """
     From floor-ceil to 0-100%
     """
     return round((float(value) / float(CEIL)) * 100.0, 2)
 
 
-def from_percent(value:int) -> int:
+def from_percent(value: int) -> int:
     """
     From 0-100% to floor-ceil
     """
@@ -87,7 +87,7 @@ def set_brightness(value: int) -> int:
     return value
 
 
-def get_brightness(as_percent:bool = False) -> int:
+def get_brightness(as_percent: bool = False) -> int:
     """
     Gets the current brightness level, can be as 0-255 or 0-100%
     """
@@ -97,83 +97,57 @@ def get_brightness(as_percent:bool = False) -> int:
 
         if as_percent:
             value = to_percent(value)
+        else:
+            value = int(value)
 
     return value
 
 
-def go_direction(step: int, direction: str = "+") -> int:
+def set_brightness_by_step(step: int) -> int:
     """
     Increase / Lower the brightness level by a [step] %
     """
     value = get_brightness()
-    if direction == "+":
-        value += step
-    elif direction == "+":
-        value -= step
-
+    value += int(step)
     value = limits(value)
+
     set_brightness(value)
 
     return value
 
 
-def go_up(step:int) -> int:
-    """
-    Increases brightness
-    """
-    return go_direction(step, "+")
-
-
-def go_down(step:int) -> int:
-    """
-    Lowers brightness
-    """
-    return go_direction(step, "-")
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("percent", type=str, nargs="?", help="Set brightness to this percentage")
+    parser = argparse.ArgumentParser(description="A duct-tape solution to a very annoying bug.")
+    parser.add_argument("percent", type=str, nargs="?", help="Set brightness to this percentage.")
     parser.add_argument(
-        "--confirm",
-        action="store_true",
-        default=False,
-        help="""
-        This software is provided AS IS.
-        Please, confirm that you're completely sure that you want to run this script.
-        This argument is required.
-        """
+        "-s", "--step", action="store_true", help="Increase/Decrease brightness by a step instead."
     )
     parser.add_argument(
-        "-u", "--up", type=int, default=1, help="Increase brightness by [step]%"
+        "-q", "--query", action="store_true", help="Get current brightness percentage."
     )
-    parser.add_argument("-d", "--down", type=int, default=1, help="Lower brightness by [step]%")
     parser.add_argument(
-        "-q",
-        "--query",
-        action="store_true",
-        default=False,
-        help="Query current brigthness level.",
+        "--confirm", action="store_true", help="""This software is provided AS IS.
+Please, confirm that you're completely sure that you want to run this script.
+This argument is required."""
     )
 
     args = parser.parse_args()
 
-    # Without you paren-- your confirmation, it just can't go on.
+    ## Without your confirmation, it just can't go on.
     if not args.confirm:
-        print ("Please use `--confirm` !")
-        sys.exit(1)
+       print ("Please use `--confirm` !")
+       sys.exit(1)
 
     ## So, you're fearless...
     if args.query:
         output = get_brightness(True)
-        print (f"{output} %")
+        print(f"{output} %")
     else:
+        if args.step:
+            set_brightness_by_step(args.percent)
+            sys.exit(0)
         if args.percent:
             set_brightness(from_percent(args.percent))
+            sys.exit(0)
         else:
-            if args.up:
-                go_up(args.up)
-            elif args.down:
-                go_down(args.down)
-            else:
-                parser.print_help()
+            parser.print_help()

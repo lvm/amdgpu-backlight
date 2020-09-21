@@ -23,10 +23,10 @@ optional arguments:
 
 ### sudoers.d
 
-You might want to create a file named `/etc/sudoers.d/amdgpu-brightness` with this content:
+You might want to create a file named `/etc/sudoers.d/amdgpu-backlight` with this content:
 
 ```
-YOU localhost = (YOU) NOPASSWD:/path/to/bin/amdgpu-brightness
+YOU ALL = (ALL:ALL) NOPASSWD: /usr/bin/amdgpu-backlight
 ```
 
 ## Bugs?

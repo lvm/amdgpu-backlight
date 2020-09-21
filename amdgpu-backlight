@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+
+"""
+amdgpu-backlight - A duct-tape solution to a very annoying bug.
+License: BSD 3-Clause
+Copyright (c) 2020, Mauro <mauro@sdf.org>
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+__author__ = "Mauro"
+__version__ = "0.0.1"
+__license__ = "BSD3"
+
+
+import sys
+import argparse
+from math import ceil
+from pathlib import Path
+
+
+AMDGPU_BRIGHTNESS = Path("/sys/class/backlight/amdgpu_bl0/brightness")
+FLOOR = 0
+CEIL = 255
+
+
+def limits(value: int) -> int:
+    """
+    Limits an int to >=0 && 255<=
+    """
+    try:
+        value = int(value)
+    except:
+        print ("value: Wrong type. Must be `int`.")
+        sys.exit(1)
+
+    if value < FLOOR:
+        value = FLOOR
+    if value > CEIL:
+        value = CEIL
+
+    return value
+
+
+def to_percent(value:int) -> int:
+    """
+    From floor-ceil to 0-100%
+    """
+    return round((float(value) / float(CEIL)) * 100.0, 2)
+
+
+def from_percent(value:int) -> int:
+    """
+    From 0-100% to floor-ceil
+    """
+    return int((float(value) * float(CEIL)) / 100)
+
+
+def set_brightness(value: int) -> int:
+    """
+    Sets the brightness level
+    """
+    with AMDGPU_BRIGHTNESS.open("w") as _:
+        _.write(str(limits(value)))
+
+    return value
+
+
+def get_brightness(as_percent:bool = False) -> int:
+    """
+    Gets the current brightness level, can be as 0-255 or 0-100%
+    """
+    with AMDGPU_BRIGHTNESS.open("r") as _:
+        value = "".join([_ for _ in _.readlines()])
+        value = limits(int(value))
+
+        if as_percent:
+            value = to_percent(value)
+
+    return value
+
+
+def go_direction(step: int, direction: str = "+") -> int:
+    """
+    Increase / Lower the brightness level by a [step] %
+    """
+    value = get_brightness()
+    if direction == "+":
+        value += step
+    elif direction == "+":
+        value -= step
+
+    value = limits(value)
+    set_brightness(value)
+
+    return value
+
+
+def go_up(step:int) -> int:
+    """
+    Increases brightness
+    """
+    return go_direction(step, "+")
+
+
+def go_down(step:int) -> int:
+    """
+    Lowers brightness
+    """
+    return go_direction(step, "-")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("percent", type=str, nargs="?", help="Set brightness to this percentage")
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        default=False,
+        help="""
+        This software is provided AS IS.
+        Please, confirm that you're completely sure that you want to run this script.
+        This argument is required.
+        """
+    )
+    parser.add_argument(
+        "-u", "--up", type=int, default=1, help="Increase brightness by [step]%"
+    )
+    parser.add_argument("-d", "--down", type=int, default=1, help="Lower brightness by [step]%")
+    parser.add_argument(
+        "-q",
+        "--query",
+        action="store_true",
+        default=False,
+        help="Query current brigthness level.",
+    )
+
+    args = parser.parse_args()
+
+    # Without you paren-- your confirmation, it just can't go on.
+    if not args.confirm:
+        print ("Please use `--confirm` !")
+        sys.exit(1)
+
+    ## So, you're fearless...
+    if args.query:
+        output = get_brightness(True)
+        print (f"{output} %")
+    else:
+        if args.percent:
+            set_brightness(from_percent(args.percent))
+        else:
+            if args.up:
+                go_up(args.up)
+            elif args.down:
+                go_down(args.down)
+            else:
+                parser.print_help()
